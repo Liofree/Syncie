@@ -3,6 +3,7 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use chrono::Local;
 use crate::theme;
+use syncie_core::sprache::t;
 
 pub struct DashboardTab {
     running: bool,
@@ -21,11 +22,11 @@ impl Default for DashboardTab {
         // (Ben, 27.11.2026). Vorher stand hier nach jedem Start nur "Bereit".
         let letzter = syncie_core::verlauf::lesen().pop();
         let status = match &letzter {
-            None => "Bereit".into(),
+            None => t("Bereit").into(),
             Some(l) => match (&l.fehler, l.uebersprungen) {
-                (Some(f), _) => format!("Fehler: {}: {f}", l.profil),
-                (None, 0) => format!("{} Dateien gesichert", l.kopiert),
-                (None, k) => format!("{} gesichert · {k} gesperrt, nicht gesichert", l.kopiert),
+                (Some(f), _) => format!("{}: {}: {f}", t("Fehler"), l.profil),
+                (None, 0) => t("{n} Dateien gesichert").replace("{n}", &l.kopiert.to_string()),
+                (None, k) => gesperrt_text(l.kopiert, k),
             },
         };
         Self {
@@ -36,7 +37,7 @@ impl Default for DashboardTab {
             // Warnungen aus dem letzten Lauf - auch aus der Aufgabenplanung,
             // nicht nur aus einem Lauf in diesem Fenster (Ben, 19.10.2026).
             warnungen: syncie_core::papierkorb_status_lesen().iter()
-                .map(|e| format!("{} · noch {} Tag(e)", e.pfad, e.tage))
+                .map(|e| format!("{} · {}", e.pfad, t("noch {n} Tag(e)").replace("{n}", &e.tage.to_string())))
                 .collect(),
             cancel: Arc::new(AtomicBool::new(false)),
         }
@@ -54,13 +55,13 @@ impl DashboardTab {
                         // Gesperrte Dateien fehlen im Backup - das gehoert in
                         // die Zeile, die man sowieso liest, nicht nur ins Log.
                         self.status = match gesperrt.len() {
-                            0 => format!("{n} Dateien gesichert"),
-                            k => format!("{n} gesichert · {k} gesperrt, nicht gesichert"),
+                            0 => t("{n} Dateien gesichert").replace("{n}", &n.to_string()),
+                            k => gesperrt_text(n, k),
                         };
                         self.last_run = Some(Local::now().format("%d.%m.%Y %H:%M").to_string());
                         self.warnungen = warnungen;
                     }
-                    Err(e) => self.status = format!("Fehler: {e}"),
+                    Err(e) => self.status = format!("{}: {e}", t("Fehler")),
                 }
             }
         }
@@ -84,13 +85,13 @@ impl DashboardTab {
         // Die Statusfarbe steht NIE allein - der Text daneben trägt die
         // Aussage, die Farbe verstärkt sie nur.
         let (farbe, titel) = if self.running {
-            (theme::SPIEGEL, "Sicherung läuft")
-        } else if self.status.starts_with("Fehler") {
-            (theme::KRITISCH, "Letzter Lauf fehlgeschlagen")
+            (theme::SPIEGEL, t("Sicherung läuft"))
+        } else if self.status.starts_with(t("Fehler")) {
+            (theme::KRITISCH, t("Letzter Lauf fehlgeschlagen"))
         } else if self.last_run.is_some() {
-            (theme::GUT, "Bereit — letzter Lauf ohne Fehler")
+            (theme::GUT, t("Bereit — letzter Lauf ohne Fehler"))
         } else {
-            (theme::TEXT_LEISE, "Bereit")
+            (theme::TEXT_LEISE, t("Bereit"))
         };
 
         theme::karte(theme::FLAECHE_1).show(ui, |ui| {
@@ -104,9 +105,10 @@ impl DashboardTab {
                     // welches Profil, welcher Bereich, die wievielte Datei.
                     let lage = self.running.then(syncie_core::fortschritt::lesen).flatten();
                     let unter = match (&lage, &self.last_run) {
-                        (Some(l), _) if l.gesamt > 0 => format!(
-                            "{} · {} · Datei {} von {}", l.profil, l.phase, l.getan, l.gesamt),
-                        (Some(l), _) => format!("{} · {} · wird gelesen ...", l.profil, l.phase),
+                        (Some(l), _) if l.gesamt > 0 => format!("{} · {} · {}", l.profil, t(&l.phase),
+                            t("Datei {n} von {m}").replace("{n}", &l.getan.to_string())
+                                .replace("{m}", &l.gesamt.to_string())),
+                        (Some(l), _) => format!("{} · {} · {}", l.profil, t(&l.phase), t("wird gelesen ...")),
                         (None, Some(lr)) => format!("{} · {}", self.status, lr),
                         (None, None) => self.status.clone(),
                     };
@@ -122,24 +124,24 @@ impl DashboardTab {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if self.running {
                         let knopf = egui::Button::new(
-                            egui::RichText::new("Abbrechen").strong().color(theme::KRITISCH))
+                            egui::RichText::new(t("Abbrechen")).strong().color(theme::KRITISCH))
                             .fill(theme::FLAECHE_2)
                             .stroke(egui::Stroke::new(1.0_f32, theme::KRITISCH))
                             .corner_radius(theme::RUNDUNG);
                         if ui.add(knopf).clicked() {
                             self.cancel.store(true, Ordering::Relaxed);
-                            self.status = "Wird abgebrochen ...".into();
+                            self.status = t("Wird abgebrochen ...").into();
                         }
                     } else {
                         ui.add_enabled_ui(!profiles.is_empty(), |ui| {
                             let knopf = egui::Button::new(
-                                egui::RichText::new("Sicherung starten")
+                                egui::RichText::new(t("Sicherung starten"))
                                     .strong().color(theme::FLAECHE_0))
                                 .fill(theme::SPIEGEL)
                                 .corner_radius(theme::RUNDUNG);
                             if ui.add(knopf).clicked() {
                                 self.running = true;
-                                self.status = "Läuft ...".into();
+                                self.status = t("Läuft ...").into();
                                 self.start_backup();
                             }
                         });
@@ -162,13 +164,14 @@ impl DashboardTab {
         let geplant = profiles.iter().filter(|p| !p.schedule.manual_only).count();
 
         let werte: [(&str, String, &str, String); 3] = [
-            ("Profile", profiles.len().to_string(), "",
-             if geplant > 0 { format!("{geplant} nach Zeitplan") } else { "nur manuell".into() }),
-            ("Quell-Ordner", quellen.to_string(), "",
-             if profiles.iter().any(|p| p.drive_enabled) { "Ziel Google Drive".into() }
-             else { "Ziel lokal".into() }),
-            ("Papierkorb", haltbarkeit.to_string(), "Monate",
-             "gelöschte Dateien".into()),
+            (t("Profile"), profiles.len().to_string(), "",
+             if geplant > 0 { t("{n} nach Zeitplan").replace("{n}", &geplant.to_string()) }
+             else { t("nur manuell").into() }),
+            (t("Quell-Ordner"), quellen.to_string(), "",
+             if profiles.iter().any(|p| p.drive_enabled) { t("Ziel Google Drive").into() }
+             else { t("Ziel lokal").into() }),
+            (t("Papierkorb"), haltbarkeit.to_string(), t("Monate"),
+             t("gelöschte Dateien").into()),
         ];
 
         theme::karte(theme::FLAECHE_1).show(ui, |ui| {
@@ -193,13 +196,13 @@ impl DashboardTab {
     }
 
     fn profilliste(&self, ui: &mut egui::Ui, profiles: &[syncie_core::profile::Profile]) {
-        theme::kopfzeile(ui, "Profile");
+        theme::kopfzeile(ui, t("Profile"));
         ui.add_space(6.0);
 
         if profiles.is_empty() {
             theme::karte(theme::FLAECHE_1).show(ui, |ui| {
                 ui.label(
-                    egui::RichText::new("Noch kein Profil. Lege unter „Profile\" eines an.")
+                    egui::RichText::new(t("Noch kein Profil. Lege links mit „+ Neues Profil“ eines an."))
                         .color(theme::TEXT_LEISE),
                 );
             });
@@ -212,20 +215,21 @@ impl DashboardTab {
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new(&p.name).size(13.5).strong().color(theme::TEXT));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let ziel = if p.drive_enabled { "Google Drive" } else { "Lokal" };
+                        let ziel = if p.drive_enabled { "Google Drive" } else { t("Lokal") };
                         ui.label(egui::RichText::new(ziel).size(11.5).color(theme::TEXT_LEISE));
                     });
                 });
 
                 let plan = if p.schedule.manual_only {
-                    "nur manuell".to_string()
+                    t("nur manuell").to_string()
                 } else {
-                    format!("{:02}:{:02} Uhr", p.schedule.hour, p.schedule.minute)
+                    t("{hh}:{mm} Uhr").replace("{hh}", &format!("{:02}", p.schedule.hour))
+                        .replace("{mm}", &format!("{:02}", p.schedule.minute))
                 };
                 ui.label(
-                    egui::RichText::new(format!(
-                        "{} Quell-Ordner · {} · Papierkorb {} Monate",
-                        p.source_paths.len(), plan, p.retention_months))
+                    egui::RichText::new(format!("{} · {} · {}",
+                        t("{n} Quell-Ordner").replace("{n}", &p.source_paths.len().to_string()), plan,
+                        t("Papierkorb {n} Monate").replace("{n}", &p.retention_months.to_string())))
                         .size(11.5).color(theme::TEXT_LEISE));
             });
             ui.add_space(8.0);
@@ -251,8 +255,8 @@ impl DashboardTab {
                         gesperrt.extend(e.uebersprungen.iter().cloned());
                         gelaufen.push(p.name.clone());
                         for w in &e.warnungen {
-                            warnungen.push(format!(
-                                "{} · noch {} Tag(e)", w.pfad, w.tage));
+                            warnungen.push(format!("{} · {}", w.pfad,
+                                t("noch {n} Tag(e)").replace("{n}", &w.tage.to_string())));
                             eintraege.push(syncie_core::PapierkorbEintrag {
                                 profil: p.name.clone(), pfad: w.pfad.clone(),
                                 tage: w.tage, groesse: w.groesse,
@@ -280,10 +284,9 @@ impl DashboardTab {
             ui.horizontal(|ui| {
                 let (rect, _) = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
                 ui.painter().circle_filled(rect.center(), 5.0, theme::KRITISCH);
-                ui.label(egui::RichText::new(format!(
-                    "⚠ {} Datei(en) verschwinden bald endgültig aus dem Papierkorb",
-                    self.warnungen.len()
-                )).size(14.0).strong().color(theme::KRITISCH));
+                ui.label(egui::RichText::new(format!("⚠ {}",
+                    t("{n} Datei(en) verschwinden bald endgültig aus dem Papierkorb")
+                        .replace("{n}", &self.warnungen.len().to_string()))).size(14.0).strong().color(theme::KRITISCH));
             });
             for w in &self.warnungen {
                 ui.label(egui::RichText::new(w).size(11.5).color(theme::TEXT_LEISE));
@@ -291,4 +294,10 @@ impl DashboardTab {
         });
         ui.add_space(12.0);
     }
+}
+
+/// "12 gesichert · 2 gesperrt, nicht gesichert" in der eingestellten Sprache.
+fn gesperrt_text(n: usize, k: usize) -> String {
+    t("{n} gesichert · {k} gesperrt, nicht gesichert")
+        .replace("{n}", &n.to_string()).replace("{k}", &k.to_string())
 }

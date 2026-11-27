@@ -6,6 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use crate::sprache::t;
 
 /// Ein Lauf eines Profils.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,6 +42,9 @@ pub enum Melden {
 pub struct Einstellungen {
     #[serde(default)]
     pub melden: Melden,
+    /// Sprache der Oberfläche; None = Systemsprache.
+    #[serde(default)]
+    pub sprache: Option<crate::sprache::Sprache>,
 }
 
 /// So viele Läufe bleiben stehen - reicht für Monate, bleibt klein.
@@ -97,9 +101,12 @@ pub fn melden_nach(l: &Lauf) {
         return;
     }
     let text = match (&l.fehler, l.uebersprungen) {
-        (Some(f), _) => format!("{}: fehlgeschlagen - {f}", l.profil),
-        (None, 0) => format!("{}: {} Dateien gesichert", l.profil, l.kopiert),
-        (None, n) => format!("{}: {} gesichert, {n} gesperrt und nicht gesichert", l.profil, l.kopiert),
+        (Some(f), _) => format!("{}: {} - {f}", l.profil, t("fehlgeschlagen")),
+        (None, 0) => format!("{}: {}", l.profil,
+            t("{n} Dateien gesichert").replace("{n}", &l.kopiert.to_string())),
+        (None, n) => format!("{}: {}", l.profil,
+            t("{n} gesichert · {k} gesperrt, nicht gesichert")
+                .replace("{n}", &l.kopiert.to_string()).replace("{k}", &n.to_string())),
     };
     hinweis(&text, l.hat_probleme());
 }

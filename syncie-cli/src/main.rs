@@ -145,9 +145,10 @@ fn main() {
 
     syncie_core::papierkorb_status_aktualisieren(&gelaufen, &papierkorb);
     if let Some(naechste) = papierkorb.iter().map(|e| e.tage).min() {
-        syncie_core::verlauf::hinweis(&format!(
-            "{} Datei(en) werden in {} Tag(en) endgültig aus dem Papierkorb gelöscht. \
-             Syncie öffnen, um sie zurückzuholen.", papierkorb.len(), naechste), true);
+        let text = syncie_core::sprache::t(
+            "{n} Datei(en) werden in {d} Tag(en) endgültig aus dem Papierkorb gelöscht. Syncie öffnen, um sie zurückzuholen.")
+            .replace("{n}", &papierkorb.len().to_string()).replace("{d}", &naechste.to_string());
+        syncie_core::verlauf::hinweis(&text, true);
     }
 
     let ok = results.iter().all(|r| r["ok"] == true);

@@ -172,7 +172,8 @@ pub fn segment(ui: &mut egui::Ui, einweg: bool) -> Option<bool> {
             ui.allocate_ui_with_layout(egui::vec2(146.0, 24.0),
                                        egui::Layout::left_to_right(egui::Align::Center), |ui| {
                 ui.spacing_mut().item_spacing.x = 2.0;
-                for (wert, text, farbe) in [(false, "Spiegeln", SPIEGEL), (true, "Einweg", WARNUNG)] {
+                for (wert, text, farbe) in [(false, syncie_core::sprache::t("Spiegeln"), SPIEGEL),
+                                            (true, syncie_core::sprache::t("Einweg"), WARNUNG)] {
                     let an = einweg == wert;
                     let knopf = egui::Button::new(egui::RichText::new(text).size(12.0)
                             .color(if an { FLAECHE_0 } else { TEXT_2 }).strong())

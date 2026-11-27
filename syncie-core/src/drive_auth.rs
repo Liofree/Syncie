@@ -111,7 +111,7 @@ fn wait_for_code(listener: &TcpListener) -> Result<String, String> {
 
     loop {
         if start.elapsed().as_secs() > 120 {
-            return Err("Zeitüberschreitung (2 Minuten)".into());
+            return Err(crate::sprache::t("Zeitüberschreitung (2 Minuten)").into());
         }
         match rx.recv_timeout(Duration::from_millis(500)) {
             Ok(Ok(code)) => return Ok(code),

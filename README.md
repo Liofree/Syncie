@@ -3,7 +3,8 @@
 *Quiet tools. Real impact.* — a small, free Windows tool by [Liofree](https://liofree.com).
 
 Syncie backs up your folders to **Google Drive** or a **local / USB drive** and then gets out of your way.
-The interface is currently in German.
+The interface is available in **English, German and Spanish** – it follows your Windows language
+and can be switched at the bottom left.
 
 ## What it does
 

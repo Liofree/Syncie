@@ -2,6 +2,7 @@ use crate::dashboard::DashboardTab;
 use crate::settings::SettingsTab;
 use crate::verlauf::VerlaufTab;
 use crate::theme;
+use syncie_core::sprache::{self, t, Sprache};
 
 pub struct App {
     tab: Tab,
@@ -62,14 +63,14 @@ impl eframe::App for App {
                 });
                 ui.add_space(16.0);
 
-                if theme::eintrag(ui, self.tab == Tab::Dashboard, "Übersicht", "", None).clicked() {
+                if theme::eintrag(ui, self.tab == Tab::Dashboard, t("Übersicht"), "", None).clicked() {
                     self.tab = Tab::Dashboard;
                 }
-                if theme::eintrag(ui, self.tab == Tab::Verlauf, "Verlauf", "", None).clicked() {
+                if theme::eintrag(ui, self.tab == Tab::Verlauf, t("Verlauf"), "", None).clicked() {
                     self.tab = Tab::Verlauf;
                 }
                 ui.add_space(14.0);
-                ui.horizontal(|ui| { ui.add_space(10.0); theme::kopfzeile(ui, "Profile"); });
+                ui.horizontal(|ui| { ui.add_space(10.0); theme::kopfzeile(ui, t("Profile")); });
                 ui.add_space(2.0);
                 if self.settings.profilliste(ui, self.tab == Tab::Settings) {
                     self.tab = Tab::Settings;
@@ -77,7 +78,7 @@ impl eframe::App for App {
 
                 ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
                     let rechts = concat!("v", env!("CARGO_PKG_VERSION"));
-                    if theme::eintrag(ui, self.tab == Tab::Ueber, "Über Syncie", rechts, None).clicked() {
+                    if theme::eintrag(ui, self.tab == Tab::Ueber, t("Über Syncie"), rechts, None).clicked() {
                         self.tab = Tab::Ueber;
                     }
                     ui.add_space(8.0);
@@ -85,17 +86,28 @@ impl eframe::App for App {
                     // Link grau und ohne Wirkung - der Link kommt in ueber.rs.
                     let url = crate::ueber::SPENDE_URL;
                     let knopf = egui::Button::new(
-                        egui::RichText::new("☕  Kaffee spendieren").strong()
+                        egui::RichText::new(format!("☕  {}", t("Kaffee spendieren"))).strong()
                             .color(if url.is_empty() { theme::TEXT_LEISE } else { theme::FLAECHE_0 }))
                         .fill(if url.is_empty() { theme::FLAECHE_2 } else { theme::WARNUNG })
                         .corner_radius(theme::RUNDUNG)
                         .min_size(egui::vec2(ui.available_width(), 32.0));
                     if ui.add_enabled(!url.is_empty(), knopf)
-                        .on_disabled_hover_text("Spendenlink folgt")
+                        .on_disabled_hover_text(t("Spendenlink folgt"))
                         .clicked()
                     {
                         ui.ctx().open_url(egui::OpenUrl::new_tab(url));
                     }
+                    ui.add_space(8.0);
+                    // Sprache (Ben, 27.11.2026): DE / EN / ES, gilt sofort.
+                    ui.horizontal(|ui| {
+                        ui.add_space(8.0);
+                        let jetzt = sprache::aktiv();
+                        for (s, kurz) in [(Sprache::De, "DE"), (Sprache::En, "EN"), (Sprache::Es, "ES")] {
+                            if ui.selectable_label(jetzt == s, kurz).clicked() && jetzt != s {
+                                sprache::waehlen(s);
+                            }
+                        }
+                    });
                 });
             });
 

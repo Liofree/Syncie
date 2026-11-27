@@ -9,6 +9,7 @@ pub mod zustand;
 pub mod drive_auth;
 pub mod papierkorb;
 pub mod verlauf;
+pub mod sprache;
 
 use thiserror::Error;
 
@@ -184,7 +185,7 @@ fn lauf(
         Ok(()) => {}
         Err(std::fs::TryLockError::WouldBlock) => {
             return Err(Error::General(
-                "Es läuft schon eine Sicherung - dieser Lauf wurde nicht gestartet".into(),
+                sprache::t("Es läuft schon eine Sicherung - dieser Lauf wurde nicht gestartet").into(),
             ));
         }
         Err(std::fs::TryLockError::Error(e)) => return Err(e.into()),
@@ -194,17 +195,17 @@ fn lauf(
     // der Scan sie als leer - und der Papierkorb schluckte das halbe
     // Backup. Lieber hier abbrechen als dort raten (Ben, 23.08.2026).
     if let Some(fehlt) = profile.source_paths.iter().find(|p| !p.exists()) {
-        return Err(Error::General(format!(
-            "Quellordner nicht erreichbar: {} - nichts geändert",
-            fehlt.display()
-        )));
+        return Err(Error::General(
+            sprache::t("Quellordner nicht erreichbar: {p} - nichts geändert")
+                .replace("{p}", &fehlt.display().to_string()),
+        ));
     }
 
     let rt = tokio::runtime::Runtime::new().map_err(|e| Error::General(e.to_string()))?;
 
     let target: Box<dyn dest::Destination> = if profile.drive_enabled {
         if profile.drive_folder_id.is_empty() {
-            return Err(Error::General("Kein Google-Drive-Ordner ausgewählt".into()));
+            return Err(Error::General(sprache::t("Kein Google-Drive-Ordner ausgewählt").into()));
         }
         Box::new(
             dest::drive::DriveDest::new(profile.drive_folder_id.clone(), None)

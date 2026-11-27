@@ -3,6 +3,7 @@
 
 use syncie_core::verlauf::{self, Melden};
 use crate::theme;
+use syncie_core::sprache::t;
 
 pub struct VerlaufTab {
     melden: Melden,
@@ -24,25 +25,26 @@ fn dauer(s: u64) -> String {
 
 impl VerlaufTab {
     pub fn show(&mut self, ui: &mut egui::Ui) {
-        ui.label(egui::RichText::new("Verlauf").size(19.0).color(theme::TEXT));
+        ui.label(egui::RichText::new(t("Verlauf")).size(19.0).color(theme::TEXT));
         ui.add_space(14.0);
 
         theme::karte(theme::FLAECHE_1).show(ui, |ui| {
             ui.set_width(ui.available_width());
-            theme::kopfzeile(ui, "Meldung nach dem Lauf");
+            theme::kopfzeile(ui, t("Meldung nach dem Lauf"));
             ui.add_space(4.0);
             let vorher = self.melden;
             ui.horizontal(|ui| {
-                ui.selectable_value(&mut self.melden, Melden::Aus, "Aus");
-                ui.selectable_value(&mut self.melden, Melden::NurProbleme, "Nur bei Problemen");
-                ui.selectable_value(&mut self.melden, Melden::Immer, "Nach jedem Lauf");
+                ui.selectable_value(&mut self.melden, Melden::Aus, t("Aus"));
+                ui.selectable_value(&mut self.melden, Melden::NurProbleme, t("Nur bei Problemen"));
+                ui.selectable_value(&mut self.melden, Melden::Immer, t("Nach jedem Lauf"));
             });
             ui.label(egui::RichText::new(
-                "Windows-Meldung unten rechts. Probleme: Lauf fehlgeschlagen oder Dateien \
-                 gesperrt und nicht gesichert. Gilt auch für Läufe aus der Aufgabenplanung.")
+                t("Windows-Meldung unten rechts. Probleme: Lauf fehlgeschlagen oder Dateien gesperrt und nicht gesichert. Gilt auch für Läufe aus der Aufgabenplanung."))
                 .size(11.5).color(theme::TEXT_LEISE));
             if self.melden != vorher {
-                verlauf::einstellungen_speichern(&verlauf::Einstellungen { melden: self.melden });
+                let mut e = verlauf::einstellungen_lesen();
+                e.melden = self.melden;
+                verlauf::einstellungen_speichern(&e);
             }
         });
         ui.add_space(12.0);
@@ -52,15 +54,15 @@ impl VerlaufTab {
         let laeufe = verlauf::lesen();
         theme::karte(theme::FLAECHE_1).show(ui, |ui| {
             ui.set_width(ui.available_width());
-            theme::kopfzeile(ui, "Letzte Läufe");
+            theme::kopfzeile(ui, t("Letzte Läufe"));
             ui.add_space(4.0);
             if laeufe.is_empty() {
-                ui.label(egui::RichText::new("Noch kein Lauf aufgezeichnet.").color(theme::TEXT_LEISE));
+                ui.label(egui::RichText::new(t("Noch kein Lauf aufgezeichnet.")).color(theme::TEXT_LEISE));
                 return;
             }
             egui::Grid::new("laeufe").num_columns(6).spacing([18.0, 7.0]).striped(false).show(ui, |ui| {
                 for k in ["Start", "Profil", "Dauer", "Gesichert", "Gesperrt", "Ergebnis"] {
-                    theme::kopfzeile(ui, k);
+                    theme::kopfzeile(ui, t(k));
                 }
                 ui.end_row();
                 for l in laeufe.iter().rev().take(50) {
@@ -75,10 +77,10 @@ impl VerlaufTab {
                     });
                     match &l.fehler {
                         Some(f) => ui.add(egui::Label::new(
-                            egui::RichText::new(format!("Fehler: {f}")).color(theme::KRITISCH)).truncate())
+                            egui::RichText::new(format!("{}: {f}", t("Fehler"))).color(theme::KRITISCH)).truncate())
                             .on_hover_text(f),
                         None if l.uebersprungen > 0 =>
-                            ui.label(egui::RichText::new("unvollständig").color(theme::WARNUNG)),
+                            ui.label(egui::RichText::new(t("unvollständig")).color(theme::WARNUNG)),
                         None => ui.label(egui::RichText::new("ok").color(theme::GUT)),
                     };
                     ui.end_row();

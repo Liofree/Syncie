@@ -33,7 +33,7 @@ fn laeufe_werden_mitgeschrieben_und_gekuerzt() {
     let l = verlauf::lesen();
     assert_eq!(l.len(), 2);
     assert_eq!((l[0].profil.as_str(), l[0].kopiert, l[0].fehler.is_none()), ("VL", 1, true));
-    assert!(l[1].fehler.as_deref().unwrap().contains("nicht erreichbar"));
+    assert!(l[1].fehler.is_some(), "fehlende Quelle muss als Fehler im Verlauf stehen");
     assert!(l[1].hat_probleme() && !l[0].hat_probleme());
 
     for _ in 0..verlauf::BEHALTEN + 5 {
@@ -42,7 +42,7 @@ fn laeufe_werden_mitgeschrieben_und_gekuerzt() {
     assert_eq!(verlauf::lesen().len(), verlauf::BEHALTEN, "Verlauf bleibt begrenzt");
 
     // Einstellung ueberlebt Speichern und Laden.
-    verlauf::einstellungen_speichern(&verlauf::Einstellungen { melden: Melden::NurProbleme });
+    verlauf::einstellungen_speichern(&verlauf::Einstellungen { melden: Melden::NurProbleme, ..Default::default() });
     assert_eq!(verlauf::einstellungen_lesen().melden, Melden::NurProbleme);
 
     let _ = fs::remove_dir_all(&tmp);

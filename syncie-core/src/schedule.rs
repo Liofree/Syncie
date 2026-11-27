@@ -34,12 +34,12 @@ fn weekday_codes(p: &Profile) -> Vec<&'static str> {
 pub fn register(p: &Profile) -> Result<String, String> {
     if p.schedule.manual_only {
         unregister(&p.name)?;
-        return Ok("Zeitplan entfernt (nur manuell)".into());
+        return Ok(crate::sprache::t("Zeitplan entfernt (nur manuell)").into());
     }
 
     let days = weekday_codes(p);
     if days.is_empty() {
-        return Err("Kein Wochentag ausgewählt".into());
+        return Err(crate::sprache::t("Kein Wochentag ausgewählt").into());
     }
 
     let cli = cli_path()?;
@@ -59,7 +59,8 @@ pub fn register(p: &Profile) -> Result<String, String> {
         .map_err(|e| format!("schtasks: {e}"))?;
 
     if out.status.success() {
-        Ok(format!("Zeitplan aktiv: {} um {st}", days.join(",")))
+        Ok(crate::sprache::t("Zeitplan aktiv: {tage} um {zeit}")
+            .replace("{tage}", &days.join(",")).replace("{zeit}", &st))
     } else {
         Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
     }
