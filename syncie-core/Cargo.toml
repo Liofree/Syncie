@@ -1,0 +1,23 @@
+[package]
+name = "syncie-core"
+version = "0.3.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+walkdir = "2"
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
+# Parallele Uploads (buffer_unordered) - steckt ueber reqwest schon im Cargo.lock.
+futures-util = "0.3"
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+rand = "0.8"
+webbrowser = "1"
+
+[dev-dependencies]
+# Nur fuer die Tests: dieselbe Version wie oben, kein zusaetzlicher Download.
+chrono = { version = "0.4", features = ["serde"] }

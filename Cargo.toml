@@ -1,0 +1,3 @@
+[workspace]
+members = ["syncie-core", "syncie-gui", "syncie-cli"]
+resolver = "2"

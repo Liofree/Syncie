@@ -1,0 +1,10 @@
+# Build-Artefakte - werden aus der Quelle erzeugt und sind gross
+/target/
+
+# Nutzerdaten: profiles.json und papierkorb.json liegen in %APPDATA%\syncie,
+# gehoeren also ohnehin nicht hierher. Falls doch mal eine Kopie im Projekt
+# landet, bleibt sie draussen - dort stehen Pfade und Ordner-IDs drin.
+profiles.json
+papierkorb.json
+warnungen.log
+*.bak
