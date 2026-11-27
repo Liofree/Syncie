@@ -8,3 +8,4 @@ profiles.json
 papierkorb.json
 warnungen.log
 *.bak
+/dist/
