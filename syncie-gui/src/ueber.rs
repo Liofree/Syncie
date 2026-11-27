@@ -8,7 +8,7 @@ use crate::theme;
 /// Herausgeber (Ben, 27.11.2026: liofree.com).
 pub const STUDIO: &str = "Liofree";
 /// Leitsatz des Studios, dezent unter dem Herausgeber.
-pub const SLOGAN: &str = "Tools you don't hear, but feel.";
+pub const SLOGAN: &str = "Quiet tools. Real impact.";
 /// Lizenz des Quellcodes - zusammen mit der LICENSE-Datei im Repo festlegen.
 pub const LIZENZ: &str = "MIT";
 /// Projektseite (z. B. GitHub-Repo mit Releases).

@@ -1,6 +1,6 @@
 # Syncie
 
-*Tools you don't hear, but feel.* — a small, free Windows tool by [Liofree](https://liofree.com).
+*Quiet tools. Real impact.* — a small, free Windows tool by [Liofree](https://liofree.com).
 
 Syncie backs up your folders to **Google Drive** or a **local / USB drive** and then gets out of your way.
 The interface is currently in German.
