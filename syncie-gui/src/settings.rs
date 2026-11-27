@@ -183,9 +183,12 @@ impl SettingsTab {
     fn schritt_was(&mut self, ui: &mut egui::Ui) {
         let quellen = &mut self.form.source_paths;
         let einweg = &mut self.form.einweg;
+        let status = &mut self.status;
         schritt(ui, 1, "Was wird gesichert", |ui| {
             let mut weg = None;
             let mut umschalten = None;
+            let mut unter_weg = None;
+            let mut unter_neu = None;
             for (i, sp) in quellen.iter().enumerate() {
                 if i > 0 {
                     ui.separator();
@@ -209,10 +212,56 @@ impl SettingsTab {
                         }
                     });
                 });
+
+                // Unterordner als Einweg (Ben, 27.11.2026): der Ordner wird
+                // gespiegelt, nur die gewaehlten Unterordner - beliebig viele,
+                // beliebig tief - behalten lokal Geloeschtes. Steht der ganze
+                // Ordner auf Einweg, ist das schon abgedeckt.
+                if einweg.contains(sp) {
+                    continue;
+                }
+                for e in einweg.iter().filter(|e| e.starts_with(sp) && *e != sp) {
+                    ui.horizontal(|ui| {
+                        ui.add_space(18.0);
+                        ui.label(egui::RichText::new("Einweg").size(11.0).strong().color(theme::WARNUNG));
+                        let rel = e.strip_prefix(sp).map(|r| r.display().to_string()).unwrap_or_default();
+                        ui.label(egui::RichText::new(rel).color(theme::TEXT_2))
+                            .on_hover_text(e.display().to_string());
+                        if ui.add(egui::Button::new(leise("×")).frame(false))
+                            .on_hover_text("Unterordner wieder spiegeln").clicked()
+                        {
+                            unter_weg = Some(e.clone());
+                        }
+                    });
+                }
+                ui.horizontal(|ui| {
+                    ui.add_space(18.0);
+                    if ui.add(egui::Button::new(
+                        egui::RichText::new("+ Unterordner als Einweg").size(11.5).color(theme::WARNUNG))
+                        .frame(false))
+                        .on_hover_text("Ein Unterordner, dessen gelöschte Dateien im Ziel bleiben sollen")
+                        .clicked()
+                    {
+                        if let Some(p) = rfd::FileDialog::new().set_directory(sp).pick_folder() {
+                            if p.starts_with(sp) && p != *sp {
+                                unter_neu = Some(p);
+                            } else {
+                                *status = format!("Fehler: {} liegt nicht unter {}", p.display(), sp.display());
+                            }
+                        }
+                    }
+                });
+            }
+            if let Some(e) = unter_weg {
+                einweg.retain(|x| *x != e);
+            }
+            if let Some(p) = unter_neu {
+                if !einweg.contains(&p) { einweg.push(p); }
             }
             if let Some(i) = weg {
                 let p = quellen.remove(i);
-                einweg.retain(|e| *e != p);
+                // Mit dem Ordner gehen auch seine Einweg-Unterordner.
+                einweg.retain(|e| !e.starts_with(&p));
             }
             if let Some(p) = umschalten {
                 if einweg.contains(&p) { einweg.retain(|e| *e != p); } else { einweg.push(p); }

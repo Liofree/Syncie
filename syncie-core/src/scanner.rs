@@ -23,6 +23,19 @@ pub(crate) fn root_label(root: &PathBuf) -> String {
         })
 }
 
+/// Zielpraefix eines Einweg-Ordners, so wie der Scanner die Pfade benennt
+/// (Ben, 27.11.2026): ein Quell-Ordner selbst -> "LUNA", ein Unterordner
+/// beliebiger Tiefe -> "LUNA/data/videos". None, wenn der Ordner unter
+/// keiner Quelle liegt (z.B. Quelle inzwischen entfernt).
+pub fn einweg_praefix(quellen: &[PathBuf], ordner: &std::path::Path) -> Option<String> {
+    let quelle = quellen.iter()
+        .filter(|q| ordner.starts_with(q))
+        .max_by_key(|q| q.components().count())?;
+    let rel = ordner.strip_prefix(quelle).ok()?.to_string_lossy().replace('\\', "/");
+    let label = root_label(quelle);
+    Some(if rel.is_empty() { label } else { format!("{label}/{rel}") })
+}
+
 /// Ein Muster trifft entweder den GANZEN Namen (".git") oder, mit '*'
 /// davor, sein Ende ("*token.json" fasst auch spotify_token.json).
 ///

@@ -215,11 +215,11 @@ fn lauf(
     };
 
     let exclude = profile.exclude_patterns();
-    // Einweg-Ordner als Zielpraefix, wie der Scanner sie benennt. Nur
-    // Ordner, die noch Quelle sind - ein entfernter Ordner zaehlt nicht.
+    // Einweg-Ordner als Zielpraefix, wie der Scanner sie benennt - ganze
+    // Quell-Ordner oder Unterordner beliebiger Tiefe. Was unter keiner
+    // Quelle mehr liegt, zaehlt nicht.
     let einweg: Vec<String> = profile.einweg.iter()
-        .filter(|p| profile.source_paths.contains(p))
-        .map(scanner::root_label)
+        .filter_map(|p| scanner::einweg_praefix(&profile.source_paths, p))
         .collect();
     // Meldet im Takt, wo der Lauf steht - fuer das Syncie-Fenster und das
     // LUNA-HUD. Raeumt beim Verlassen selbst auf (Drop).
